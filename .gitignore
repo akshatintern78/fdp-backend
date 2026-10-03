@@ -1,0 +1,8 @@
+node_modules
+data
+.env
+assets/proof.png
+assets/crop-*.png
+assets/proof-*.png
+assets/slip-pay.png
+assets/sample.pdf

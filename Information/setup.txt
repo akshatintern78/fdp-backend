@@ -1,0 +1,245 @@
+// Chapersons FDP — PostgreSQL setup
+// Copy .env.example to .env before starting the API.
+//
+// pgAdmin: Query Tool does not understand psql commands (\c or psql ...).
+// Run steps 2–4 while connected to the "postgres" database.
+// Then open a new Query Tool on the new database and run from step 6.
+//
+// PowerShell (this PC):
+//   $env:NODE_ENV="development"; npx sequelize-cli db:migrate
+//   $env:NODE_ENV="test"; npx sequelize-cli db:migrate
+//   $env:NODE_ENV="production"; npx sequelize-cli db:migrate
+
+
+// Local setup --------------------------------------------------------------------------
+-- 1️⃣ Connect as PostgreSQL superuser
+psql -U postgres -h localhost -p 5432
+
+-- 2️⃣ Create application user (role)
+CREATE USER "fdp_user"
+WITH PASSWORD 'fdp_user@2026';
+
+-- 3️⃣ Create database and assign ownership
+CREATE DATABASE "fdp_db"
+OWNER "fdp_user";
+
+-- 4️⃣ Restrict public access and grant access to application user
+REVOKE CONNECT ON DATABASE "fdp_db" FROM PUBLIC;
+GRANT CONNECT ON DATABASE "fdp_db" TO "fdp_user";
+
+-- 5️⃣ Connect to the database
+\c fdp_db
+
+-- 6️⃣ Create schema
+CREATE SCHEMA IF NOT EXISTS fdp_schema
+AUTHORIZATION "fdp_user";
+
+-- 7️⃣ Secure schema permissions
+REVOKE ALL ON SCHEMA fdp_schema FROM PUBLIC;
+
+GRANT USAGE ON SCHEMA fdp_schema
+TO "fdp_user";
+
+GRANT CREATE ON SCHEMA fdp_schema
+TO "fdp_user";
+
+-- 8️⃣ Configure default privileges for future tables
+ALTER DEFAULT PRIVILEGES
+FOR ROLE "fdp_user"
+IN SCHEMA fdp_schema
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON TABLES TO "fdp_user";
+
+-- Configure default privileges for future sequences
+ALTER DEFAULT PRIVILEGES
+FOR ROLE "fdp_user"
+IN SCHEMA fdp_schema
+GRANT USAGE, SELECT
+ON SEQUENCES TO "fdp_user";
+
+-- 9️⃣ Set default search path
+ALTER ROLE "fdp_user"
+SET search_path = fdp_schema, public;
+
+-- 🔟 Install required extensions
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 1️⃣1️⃣ Grant additional permissions
+GRANT CONNECT ON DATABASE "fdp_db"
+TO "fdp_user";
+
+GRANT USAGE, CREATE ON SCHEMA fdp_schema
+TO "fdp_user";
+
+GRANT ALL PRIVILEGES ON DATABASE "fdp_db"
+TO "fdp_user";
+
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA fdp_schema
+TO "fdp_user";
+
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA fdp_schema
+TO "fdp_user";
+
+-- 1️⃣2️⃣ Ensure future objects automatically inherit permissions
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA fdp_schema
+GRANT ALL PRIVILEGES ON TABLES
+TO "fdp_user";
+
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA fdp_schema
+GRANT ALL PRIVILEGES ON SEQUENCES
+TO "fdp_user";
+
+npx sequelize-cli db:migrate
+
+
+// UAT setup --------------------------------------------------------------------------
+
+-- 1️⃣ Connect as superuser
+psql -U postgres -h localhost -p 5432
+
+-- 2️⃣ Create the user (role)
+CREATE USER "fdp_uat_user" WITH PASSWORD 'fdp_uat@2026';
+
+-- 3️⃣ Create the database
+CREATE DATABASE "fdp_uat_db"
+OWNER "fdp_uat_user";
+
+-- 4️⃣ Restrict public access and allow your app user
+REVOKE CONNECT ON DATABASE "fdp_uat_db" FROM PUBLIC;
+GRANT CONNECT ON DATABASE "fdp_uat_db" TO "fdp_uat_user";
+
+-- 5️⃣ Connect to the database
+\c fdp_uat_db
+
+-- 6️⃣ Create the schema
+CREATE SCHEMA IF NOT EXISTS fdp_uat_schema AUTHORIZATION "fdp_uat_user";
+
+-- 7️⃣ Harden schema permissions
+REVOKE ALL ON SCHEMA fdp_uat_schema FROM PUBLIC;
+GRANT USAGE ON SCHEMA fdp_uat_schema TO "fdp_uat_user";
+GRANT CREATE ON SCHEMA fdp_uat_schema TO "fdp_uat_user";
+
+-- 8️⃣ Set default privileges for future objects
+ALTER DEFAULT PRIVILEGES FOR ROLE "fdp_uat_user" IN SCHEMA fdp_uat_schema
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "fdp_uat_user";
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "fdp_uat_user" IN SCHEMA fdp_uat_schema
+  GRANT USAGE, SELECT ON SEQUENCES TO "fdp_uat_user";
+
+-- 9️⃣ Set user search path
+ALTER ROLE "fdp_uat_user" SET search_path = fdp_uat_schema, public;
+
+-- 🔟 Create necessary extensions
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+GRANT CONNECT ON DATABASE "fdp_uat_db" TO "fdp_uat_user";
+GRANT USAGE, CREATE ON SCHEMA fdp_uat_schema TO "fdp_uat_user";
+GRANT ALL PRIVILEGES ON DATABASE "fdp_uat_db" TO "fdp_uat_user";
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA fdp_uat_schema TO "fdp_uat_user";
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA fdp_uat_schema TO "fdp_uat_user";
+
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA fdp_uat_schema
+GRANT ALL PRIVILEGES ON TABLES
+TO "fdp_uat_user";
+
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA fdp_uat_schema
+GRANT ALL PRIVILEGES ON SEQUENCES
+TO "fdp_uat_user";
+
+NODE_ENV=test npx sequelize-cli db:migrate
+
+
+// Production setup --------------------------------------------------------------------------
+-- 1️⃣ Connect as PostgreSQL superuser
+psql -U postgres -h localhost -p 5432
+
+-- 2️⃣ Create application user (role)
+CREATE USER "fdp_prod_user"
+WITH PASSWORD 'fdp_prod@2026';
+
+-- 3️⃣ Create database and assign ownership
+CREATE DATABASE "fdp_prod_db"
+OWNER "fdp_prod_user";
+
+-- 4️⃣ Restrict public access and grant access to application user
+REVOKE CONNECT ON DATABASE "fdp_prod_db" FROM PUBLIC;
+GRANT CONNECT ON DATABASE "fdp_prod_db" TO "fdp_prod_user";
+
+-- 5️⃣ Connect to the database
+\c fdp_prod_db
+
+-- 6️⃣ Create schema
+CREATE SCHEMA IF NOT EXISTS fdp_prod_schema
+AUTHORIZATION "fdp_prod_user";
+
+-- 7️⃣ Secure schema permissions
+REVOKE ALL ON SCHEMA fdp_prod_schema FROM PUBLIC;
+
+GRANT USAGE ON SCHEMA fdp_prod_schema
+TO "fdp_prod_user";
+
+GRANT CREATE ON SCHEMA fdp_prod_schema
+TO "fdp_prod_user";
+
+-- 8️⃣ Configure default privileges for future tables
+ALTER DEFAULT PRIVILEGES
+FOR ROLE "fdp_prod_user"
+IN SCHEMA fdp_prod_schema
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON TABLES TO "fdp_prod_user";
+
+-- Configure default privileges for future sequences
+ALTER DEFAULT PRIVILEGES
+FOR ROLE "fdp_prod_user"
+IN SCHEMA fdp_prod_schema
+GRANT USAGE, SELECT
+ON SEQUENCES TO "fdp_prod_user";
+
+-- 9️⃣ Set default search path
+ALTER ROLE "fdp_prod_user"
+SET search_path = fdp_prod_schema, public;
+
+-- 🔟 Install required extensions
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 1️⃣1️⃣ Grant additional permissions
+GRANT CONNECT ON DATABASE "fdp_prod_db"
+TO "fdp_prod_user";
+
+GRANT USAGE, CREATE ON SCHEMA fdp_prod_schema
+TO "fdp_prod_user";
+
+GRANT ALL PRIVILEGES ON DATABASE "fdp_prod_db"
+TO "fdp_prod_user";
+
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA fdp_prod_schema
+TO "fdp_prod_user";
+
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA fdp_prod_schema
+TO "fdp_prod_user";
+
+-- 1️⃣2️⃣ Ensure future objects automatically inherit permissions
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA fdp_prod_schema
+GRANT ALL PRIVILEGES ON TABLES
+TO "fdp_prod_user";
+
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA fdp_prod_schema
+GRANT ALL PRIVILEGES ON SEQUENCES
+TO "fdp_prod_user";
+
+NODE_ENV=production npx sequelize-cli db:migrate
+
+
+-- Admin panel login (not stored in Postgres)
+-- Email:    admin@chapersons.local
+-- Password: admin123
+-- Change ADMIN_EMAIL and ADMIN_PASSWORD in .env before production.
