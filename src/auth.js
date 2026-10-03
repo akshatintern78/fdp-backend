@@ -1,8 +1,12 @@
 const jwt = require('jsonwebtoken');
 const config = require('./config');
 
-function signAdmin() {
-  return jwt.sign({ role: 'admin' }, config.jwtSecret, { expiresIn: '12h' });
+function signAdmin(admin) {
+  return jwt.sign(
+    { role: 'admin', id: Number(admin.id), email: admin.email },
+    config.jwtSecret,
+    { expiresIn: '12h' },
+  );
 }
 
 function signUser(user) {

@@ -7,8 +7,11 @@
 //
 // PowerShell (this PC):
 //   $env:NODE_ENV="development"; npx sequelize-cli db:migrate
+//   $env:NODE_ENV="development"; npx sequelize-cli db:seed:all
 //   $env:NODE_ENV="test"; npx sequelize-cli db:migrate
+//   $env:NODE_ENV="test"; npx sequelize-cli db:seed:all
 //   $env:NODE_ENV="production"; npx sequelize-cli db:migrate
+//   $env:NODE_ENV="production"; npx sequelize-cli db:seed:all
 
 
 // Local setup --------------------------------------------------------------------------
@@ -93,6 +96,7 @@ GRANT ALL PRIVILEGES ON SEQUENCES
 TO "fdp_user";
 
 npx sequelize-cli db:migrate
+npx sequelize-cli db:seed:all
 
 
 // UAT setup --------------------------------------------------------------------------
@@ -153,6 +157,7 @@ GRANT ALL PRIVILEGES ON SEQUENCES
 TO "fdp_uat_user";
 
 NODE_ENV=test npx sequelize-cli db:migrate
+NODE_ENV=test npx sequelize-cli db:seed:all
 
 
 // Production setup --------------------------------------------------------------------------
@@ -237,9 +242,9 @@ GRANT ALL PRIVILEGES ON SEQUENCES
 TO "fdp_prod_user";
 
 NODE_ENV=production npx sequelize-cli db:migrate
+NODE_ENV=production npx sequelize-cli db:seed:all
 
 
--- Admin panel login (not stored in Postgres)
--- Email:    admin@chapersons.local
+-- Admin panel login is the row in admins, created by the seeder.
+-- Email:    admin@chapersons.com
 -- Password: admin123
--- Change ADMIN_EMAIL and ADMIN_PASSWORD in .env before production.

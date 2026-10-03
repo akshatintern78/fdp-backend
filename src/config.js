@@ -20,7 +20,7 @@ loadEnv();
 const config = {
   port: Number(process.env.PORT) || 4000,
   jwtSecret: process.env.JWT_SECRET || 'chapersons-local-dev-secret-change-me',
-  adminEmail: (process.env.ADMIN_EMAIL || 'admin@chapersons.local').trim().toLowerCase(),
+  adminEmail: (process.env.ADMIN_EMAIL || 'admin@chapersons.com').trim().toLowerCase(),
   adminPassword: process.env.ADMIN_PASSWORD || 'admin123',
 };
 

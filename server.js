@@ -68,14 +68,15 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', asyncRoute(async (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
-  if (email !== config.adminEmail || password !== config.adminPassword) {
+  const admin = await one('SELECT * FROM admins WHERE email = ?', [email]);
+  if (!admin || !bcrypt.compareSync(password, admin.password_hash)) {
     return res.status(401).json({ error: 'Email or password is incorrect' });
   }
-  res.json({ token: signAdmin() });
-});
+  res.json({ token: signAdmin(admin) });
+}));
 
 app.get('/api/admin/users', requireAuth('admin'), asyncRoute(async (req, res) => {
   const rows = await all('SELECT id, name, email, mobile, created_at FROM users ORDER BY id DESC');
@@ -227,7 +228,7 @@ sequelize
   .then(() => {
     app.listen(config.port, '0.0.0.0', () => {
       console.log(`FDP API listening on http://localhost:${config.port}`);
-      console.log(`Admin sign-in: ${config.adminEmail}`);
+      console.log('Admin sign-in is read from the admins table');
     });
   })
   .catch((error) => {
