@@ -38,6 +38,7 @@ function publicReceipt(row, signatureBase64) {
     amount: Number(row.amount),
     amountInWords: row.amount_in_words,
     paymentRef: row.payment_ref,
+    fundraiserName: row.fundraiser_name || '',
     hasSignature: Boolean(row.signature_file),
     signatureBase64: signatureBase64 || null,
     createdAt: row.created_at,
@@ -181,6 +182,9 @@ app.post('/api/receipts', requireAuth('user'), asyncRoute(async (req, res) => {
   const payment = requireText(req.body?.paymentRef, 'Cash, cheque, draft or GPay number', 2, 60);
   if (payment.error) return res.status(400).json(payment);
 
+  const fundraiser = requireText(req.body?.fundraiserName, 'Fundraising name', 2, 80);
+  if (fundraiser.error) return res.status(400).json(fundraiser);
+
   let signatureBuffer = null;
   if (req.body?.signatureBase64) {
     const raw = String(req.body.signatureBase64).replace(/^data:image\/\w+;base64,/, '');
@@ -196,10 +200,10 @@ app.post('/api/receipts', requireAuth('user'), asyncRoute(async (req, res) => {
     const serial = await one('SELECT COALESCE(MAX(serial_no), 0) + 1 AS n FROM receipts', [], transaction);
     const inserted = await one(
       `INSERT INTO receipts
-        (user_id, serial_no, receipt_date, full_name, address, mobile, amount, amount_in_words, payment_ref)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (user_id, serial_no, receipt_date, full_name, address, mobile, amount, amount_in_words, payment_ref, fundraiser_name)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING *`,
-      [req.auth.id, serial.n, date, fullName.value, address, mobile, rounded, words.value, payment.value],
+      [req.auth.id, serial.n, date, fullName.value, address, mobile, rounded, words.value, payment.value, fundraiser.value],
       transaction,
     );
     if (signatureBuffer) {
