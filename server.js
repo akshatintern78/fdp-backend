@@ -68,6 +68,13 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true });
 });
 
+function sendPrivacy(_req, res) {
+  res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
+}
+
+app.get('/privacy', sendPrivacy);
+app.get('/api/privacy', sendPrivacy);
+
 app.post('/api/admin/login', asyncRoute(async (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
